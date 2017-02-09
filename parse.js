@@ -25,8 +25,19 @@ if (!fs.existsSync(destination)){
     fs.mkdirSync(destination);
 }
 
+// the manifest holds a list of all the themes
+const manifest = {};
+
+const appendToManifest = (theme) => {
+  manifest[theme.name] = theme.file;
+  rebuildManifest(manifest);
+};
+
+const rebuildManifest = (manifest) =>
+  fs.writeFile(`${destination}/manifest.json`, JSON.stringify(manifest, null, '  '));
+
 walker.on("file", (root, fileStats, next) => {
-  fs.readFile(fileStats.name, function () {
+  fs.readFile(fileStats.name, () => {
     const file = `${root}/${fileStats.name}`;
 
     const theme = immutable.Map(plist.parse(fs.readFileSync(file, 'utf8')));
@@ -49,6 +60,7 @@ walker.on("file", (root, fileStats, next) => {
       object: output,
     };
     fs.writeFile(`${destination}/${name}.js`, template(data));
+    appendToManifest({name: name, file: `${name}.js`});
     next();
   });
 });
